@@ -3,7 +3,10 @@
 // 1. Import
 const express = require('express');
 const path = require('path');
+const helmet = require('helmet');
 const OpenAI = require('openai');
+const rateLimit = require("express-rate-limit");
+const session = require('express-session');
 const { createClient } = require('@supabase/supabase-js');
 require('dotenv').config();
 
@@ -26,16 +29,33 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const SOCIAL_MEDIA_DOMAINS = ['twitter.com', 'facebook.com', 'instagram.com', 'tiktok.com', 'linkedin.com', 'reddit.com'];
 
-
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 menit
+    max: 100, // batas per IP
+    message: "Too many requests, please try again later."
+  });
 // ===============================================================
 // --- SOLUSI: Tambahkan Mekanisme Cache Sederhana ---
 const requestCache = new Map();
-const CACHE_DURATION_MS = 86400 * 1000; // Cache berlaku selama 30 detik
+const CACHE_DURATION_MS = 300 * 1000; // Cache berlaku selama 30 detik
 // ===============================================================
 
 // 3. Middleware
-app.use(express.static(path.join(__dirname, 'Public')));
+
+app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
+app.use(helmet());
+app.use(session({
+    secret: process.env.SESSION_SECRET,
+    cookie: {
+      secure: true,        // hanya kirim via HTTPS
+      httpOnly: true,      // tidak bisa diakses JS
+      sameSite: 'strict',  // cegah CSRF
+      maxAge: 1000 * 60 * 60 * 24 // 1 hari
+    },
+    resave: false,
+    saveUninitialized: false
+  }));
 
 // 4. API Endpoint Utama (Dengan Logika Cache)
 app.get('/api/analyze', async (req, res) => {
@@ -82,7 +102,7 @@ app.get('/api/analyze', async (req, res) => {
         console.error('[Backend] Error:', error);
         res.status(500).json({ error: 'Failed to complete analysis. ' + error.message });
     }
-});
+},limiter);
 
 
 
@@ -288,9 +308,4 @@ async function processDataWithAI(keyword, searchResults, totalResultCount) {
 
 function getSourceIcon(domain){const d=domain.toLowerCase(),k={'youtube.com':'<svg class="source-icon" viewBox="0 0 28 20"><path fill="#FF0000" d="M27.5 5.6s-.3-2.1-1.2-3C25.2 1.5 24 1.5 24 1.5H4s0 0-1.2.1C1.7 2.5.5 4.5.5 5.6S.5 9 .5 9v2s0 3.4.3 4.5c.9 1.1 2.1 1.1 3.2 1.2 1.2.1 20 0 20 0s2.8 0 3.8-1.2c.9-1.1.3-4.5.3-4.5V9s0-3.4-.3-3.4z"/><path fill="#FFFFFF" d="M11.5 14V6l8 4-8 4z"/></svg>', 'twitter.com':'<svg class="source-icon" viewBox="0 0 24 24"><path fill="#1DA1F2" d="M23.643 4.937c-.835.37-1.732.62-2.675.733.962-.576 1.7-1.49 2.048-2.578-.9.534-1.897.922-2.958 1.13-.85-.904-2.06-1.47-3.4-1.47-2.572 0-4.658 2.086-4.658 4.66 0 .364.042.718.12 1.06-3.873-.195-7.304-2.05-9.602-4.868-.398.68-.627 1.47-.627 2.305 0 1.615.823 3.043 2.072 3.878-.764-.025-1.482-.234-2.11-.583v.06c0 2.257 1.605 4.14 3.737 4.568-.392.106-.803.162-1.227.162-.3 0-.593-.028-.877-.082.593 1.85 2.313 3.198 4.352 3.234-1.595 1.25-3.604 1.995-5.786 1.995-.376 0-.747-.022-1.112-.065 2.062 1.323 4.51 2.093 7.14 2.093 8.57 0 13.255-7.098 13.255-13.254 0-.2-.005-.402-.014-.602.91-.658 1.7-1.477 2.323-2.41z"/></svg>', 'facebook.com':'<svg class="source-icon" viewBox="0 0 24 24"><path fill="#1877F2" d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878V14.89h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v7.028C18.343 21.128 22 16.991 22 12z"/></svg>', 'instagram.com':'<svg class="source-icon" viewBox="0 0 32 32"><defs><radialGradient id="ig-grad" cx=".3" cy="1.2" r="1.2"><stop offset="0" stop-color="#F7D34B"/><stop offset=".25" stop-color="#F9943B"/><stop offset=".5" stop-color="#ED3833"/><stop offset=".75" stop-color="#B73491"/><stop offset="1" stop-color="#624AA1"/></radialGradient></defs><path fill="url(#ig-grad)" d="M16 0C7.164 0 0 7.164 0 16s7.164 16 16 16 16-7.164 16-16S24.836 0 16 0zm0 4a12 12 0 110 24 12 12 0 010-24zm0 6a6 6 0 100 12 6 6 0 000-12zm8-2a1.5 1.5 0 100 3 1.5 1.5 0 000-3z"/></svg>', 'reddit.com':'<svg class="source-icon" viewBox="0 0 24 24"><path fill="#FF4500" d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.84 13.2c-.3-.29-.71-.45-1.12-.45-.49 0-.96.2-1.32.55-.4.37-.62.88-.62 1.42 0 .49.17.93.47 1.28.3.35.7.53 1.15.53.45 0 .85-.18 1.15-.53.3-.35.47-.79.47-1.28 0-.54-.22-1.05-.62-1.42zm-8.82-3.18c.89 0 1.62.72 1.62 1.62s-.72 1.62-1.62 1.62-1.62-.72-1.62-1.62.73-1.62 1.62-1.62zm5.78 6.07c-1.38-1.38-3.62-1.38-5 0-.2.2-.2.51 0 .71.2.2.51.2.71 0 .97-.97 2.56-.97 3.54 0 .2.2.51.2.71 0 .1.05.15.1.2.1 0 .15-.05.2-.1.2-.2.2-.51 0-.71z"/></svg>'};
     for(const s in k){if(d.includes(s))return k[s]}const i=d.charAt(0).toUpperCase();return`<img class="source-icon" src="https://placehold.co/40x40?text=${i}" alt="${i}" rel="noopener nofollow noreferrer">`}
-
 function randomColor(){const c=['673AB7','3F51B5','2196F3','00BCD4','4CAF50','FF9800'];return c[Math.floor(Math.random()*c.length)]}
-
-
-
-
