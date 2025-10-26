@@ -30,7 +30,7 @@ const SOCIAL_MEDIA_DOMAINS = ['twitter.com', 'facebook.com', 'instagram.com', 't
 // ===============================================================
 // --- SOLUSI: Tambahkan Mekanisme Cache Sederhana ---
 const requestCache = new Map();
-const CACHE_DURATION_MS = 300 * 1000; // Cache berlaku selama 30 detik
+const CACHE_DURATION_MS = 86400 * 1000; // Cache berlaku selama 30 detik
 // ===============================================================
 
 // 3. Middleware
@@ -290,6 +290,7 @@ function getSourceIcon(domain){const d=domain.toLowerCase(),k={'youtube.com':'<s
     for(const s in k){if(d.includes(s))return k[s]}const i=d.charAt(0).toUpperCase();return`<img class="source-icon" src="https://placehold.co/40x40?text=${i}" alt="${i}" rel="noopener nofollow noreferrer">`}
 
 function randomColor(){const c=['673AB7','3F51B5','2196F3','00BCD4','4CAF50','FF9800'];return c[Math.floor(Math.random()*c.length)]}
+
 
 
 
