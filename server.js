@@ -9,7 +9,7 @@ require('dotenv').config();
 
 // 2. Inisialisasi & Konfigurasi
 const app = express();
-const PORT = 443;
+const PORT = process.env.PORT || 3000;
 
 const SERPAPI_KEY = process.env.SERPAPI_KEY;
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
@@ -290,4 +290,5 @@ function getSourceIcon(domain){const d=domain.toLowerCase(),k={'youtube.com':'<s
     for(const s in k){if(d.includes(s))return k[s]}const i=d.charAt(0).toUpperCase();return`<img class="source-icon" src="https://placehold.co/40x40?text=${i}" alt="${i}" rel="noopener nofollow noreferrer">`}
 
 function randomColor(){const c=['673AB7','3F51B5','2196F3','00BCD4','4CAF50','FF9800'];return c[Math.floor(Math.random()*c.length)]}
+
 
