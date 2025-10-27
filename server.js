@@ -127,15 +127,47 @@ function clearOldCache() {
 async function searchSocialMedia(query) {
     const sitesQuery = SOCIAL_MEDIA_DOMAINS.map(domain => `site:${domain}`).join(' OR ');
     const finalQuery = `"${query}" (${sitesQuery})`;
-    const params = { api_key: SERPAPI_KEY, engine: "google", q: finalQuery, tbs: "qdr:w" };
-    const json = await makeSerpApiRequest(params);
-    return { results: json.organic_results || [], total_results: json.search_information?.total_results || 0 };
+
+    // Tentukan jumlah halaman yang ingin di-scrape
+    const PAGES_TO_SCRAPE = 3;
+    const searchPromises = [];
+
+    // Buat array promise untuk setiap halaman
+    for (let i = 0; i < PAGES_TO_SCRAPE; i++) {
+        const params = {
+            api_key: SERPAPI_KEY,
+            engine: "google",
+            q: finalQuery,
+            tbs: "qdr:w",
+            start: i * 10 // Paginasi: 0, 10, 20, ...
+        };
+        searchPromises.push(makeSerpApiRequest(params));
+    }
+
+    // Jalankan semua pencarian secara paralel
+    const pageResults = await Promise.all(searchPromises);
+
+    // Gabungkan semua hasil menjadi satu array dan ambil total hasil dari halaman pertama
+    let allOrganicResults = [];
+    pageResults.forEach(json => {
+        if (json.organic_results) {
+            allOrganicResults = allOrganicResults.concat(json.organic_results);
+        }
+    });
+
+    const totalResults = pageResults[0]?.search_information?.total_results || 0;
+
+    return {
+        results: allOrganicResults,
+        total_results: totalResults
+    };
 }
+
 async function searchNews(query) {
     const params = { api_key: SERPAPI_KEY, engine: "google_news", q: query, tbs: "qdr:w", gl: "id", hl: "id" };
     const json = await makeSerpApiRequest(params);
     const normalizedResults = (json.news_results ||  []).map(item => ({ ...item, snippet: item.snippet || item.title }));
-    return { results: normalizedResults, total_results: json.search_information?.total_results || 0 };
+    return { results: normalizedResults, total_results: json.news_results?.length || 0 };
 }
 async function makeSerpApiRequest(params) {
     const searchUrl = new URL("https://serpapi.com/search.json");
@@ -183,6 +215,13 @@ async function processDataWithAI(keyword, searchResults, totalResultCount) {
         try { domain = new URL(result.link).hostname.replace('www.', ''); topSources.set(domain, (topSources.get(domain) || 0) + 1); } catch (e) {}
         return { icon: getSourceIcon(domain), title: result.title, link: result.link, displayLink: result.displayed_link || domain, snippet: snippet.replace(new RegExp(keyword, 'gi'), `<mark>${keyword}</mark>`), sentiment: sentiment };
     }));
+
+    await Promise.all(searchResults.map(async (result) => {
+        const snippet = result.snippet || `Title: ${result.title}`;
+        const sentiment = await getSentimentFromAI(snippet);
+        sentimentCounts[sentiment]++;
+    }));
+
     
     const liveMentions = totalResultCount;
     
