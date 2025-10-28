@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Pulse — Instant Brand Analysis</title>
+  <title>Seksama — Instant Brand Analysis</title>
   <meta name="description" content="Instantly analyze your brand's online presence. See top mentions, sentiment, and key metrics in seconds." />
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -32,6 +32,11 @@
       --dark-border: #334155;
       --dark-text: #e2e8f0;
       --dark-muted: #94a3b8;
+
+      --instagram-color: #E4405F;
+      --tiktok-color: #000000;
+      --facebook-color: #1877F2;
+      --email-color: #f59e0b;
     }
     @media (prefers-color-scheme: dark){
       :root{
@@ -83,7 +88,7 @@
       background:linear-gradient(180deg,#43a0ff 0%,var(--blue) 100%);
       color:white;border-color:#1870ff;box-shadow:0 12px 26px rgba(43,142,255,.35)
     }
-    .menu{display:none}
+    .menu{display:none !important}
     @media (max-width:899px){ .menu{display:inline-flex} }
     .mobile-panel{
       position:fixed;left:0;right:0;top:var(--header-h);z-index:50;
@@ -299,25 +304,155 @@
         text-align:center;
     }
     
+    /* Tambahkan ini di dalam tag <style> Anda */
+
+    .cta-block {
+        background: var(--dark-card);
+        border: 1px solid var(--dark-border);
+        border-radius: 12px;
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        justify-content: center;
+        gap: 8px;
+        border-left: 4px solid var(--red); /* Aksen biru */
+        transition: .2s ease;
+    }
+
+    .cta-block:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        border-color: rgba(43, 142, 255, 0.4);
+    }
+
+    .cta-block h5 {
+        margin: 0;
+        font-size: 16px;
+        color: var(--dark-text);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .cta-block p {
+        margin: 0;
+        font-size: 13px;
+        color: var(--dark-muted);
+        flex-grow: 1; /* Mendorong tombol ke bawah */
+    }
+
+    .cta-block .btn-cta {
+        width: 100%;
+        text-align: center;
+        padding: 8px 12px;
+        border-radius: 8px;
+        background: var(--blue);
+        color: white;
+        font-weight: 600;
+        font-size: 14px;
+        border: none;
+        cursor: pointer;
+        transition: background-color .2s ease;
+    }
+
+    .cta-block .btn-cta:hover {
+        background: var(--blue-700);
+    }
+
+    /* Tambahkan ini di dalam tag <style> Anda */
+
+  .info-note {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 24px; /* Memberi jarak dari grid overview di atasnya */
+      padding: 8px 16px;
+      font-size: 13px;
+      color: var(--dark-muted); /* Warna teks yang tidak terlalu menonjol */
+      background-color: rgba(0, 0, 0, 0.1); /* Latar belakang sangat transparan */
+      border-radius: 999px; /* Bentuk pil */
+      max-width: max-content; /* Lebar sesuai konten */
+      margin-left: auto;
+      margin-right: auto;
+  }
+
+  .info-note svg {
+      flex-shrink: 0;
+      color: var(--blue);
+  }
+
+  .social-links {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+  }
+
+  .social-links a {
+      color: var(--muted);
+      display: inline-flex;
+      transition: color 0.2s ease, transform 0.2s ease;
+  }
+
+  .social-links a:hover {
+      transform: translateY(-2px);
+  }
+
+  .social-links svg {
+      width: 22px;
+      height: 22px;
+  }
+
+  .social-links a:nth-child(1):hover {
+      color: var(--instagram-color);
+  }
+
+  .social-links a:nth-child(2):hover {
+      color: var(--tiktok-color);
+  }
+
+  .social-links a:nth-child(3):hover {
+      color: var(--facebook-color);
+  }
+
+  .social-links a:nth-child(4):hover {
+      color: var(--email-color);
+  }
   </style>
 </head>
 <body>
   <header id="siteHeader">
     <div class="container nav">
-      <a class="brand" href="#"><span class="logo" aria-hidden="true"></span><span>Pulse</span></a>
+      <a class="brand" href="#"><span class="logo" aria-hidden="true"></span><span>Seksama</span></a>
       <nav aria-label="Primary">
         <ul>
           <li><a href="#results-wrapper">Results</a></li>
-          <li><a href="mailto:hello@pulse.com">Contact</a></li>
+          <li><a href="mailto:hello@seksama.com">Contact</a></li>
         </ul>
       </nav>
-      <div class="actions">
-        <a class="btn btn-primary" href="#">Go to Account</a>
-        <button class="btn menu" id="menuBtn" aria-label="Open menu">☰</button>
-      </div>
+      <div class="actions social-links">
+        <a href="https://instagram.com/tigadikalilima" target="_blank" rel="noopener noreferrer" aria-label="Instagram Seksama">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
+        </a>
+        <a href="https://tiktok.com/bwhkhkhk" target="_blank" rel="noopener noreferrer" aria-label="TikTok Seksama">
+            <!-- SVG TIKTOK YANG SUDAH DIPERBAIKI -->
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M16 8a4 4 0 1 1-8 0 4 4 0 0 1 8 0zM6 12a6 6 0 1 1 12 0A6 6 0 0 1 6 12z"></path>
+                <path d="M12 12v8"></path>
+                <path d="M12 8a4 4 0 0 0-4 4"></path>
+            </svg>
+        </a>
+        <a href="https://facebook.com/senseisaysrelax" target="_blank" rel="noopener noreferrer" aria-label="Facebook Seksama">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg>
+        </a>
+        <a href="mailto:hello@seksama.io" aria-label="Email Seksama">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+        </a>
+    </div>
     </div>
     <div id="mobilePanel" class="mobile-panel" aria-hidden="true">
-      <div class="mobile-links container"><a href="#results-wrapper">Results</a><a href="mailto:hello@pulse.com">Contact</a></div>
+      <div class="mobile-links container"><a href="#results-wrapper">Results</a><a href="mailto:hello@Seksama.com">Contact</a></div>
     </div>
   </header>
 
@@ -351,7 +486,7 @@
                     <div class="touch-text">
                         <p><strong>Need more detail?</strong> Get in touch for automated reports and full data access.</p>
                     </div>
-                    <a href="mailto:hello@pulse.com" class="btn btn-primary" style="padding: 8px 12px; font-size: 14px; white-space: nowrap;">Contact Us</a>
+                    <a href="mailto:hello@Seksama.com" class="btn btn-primary" style="padding: 8px 12px; font-size: 14px; white-space: nowrap;">Contact Us</a>
                     <button id="close-touch-btn" class="touch-close" aria-label="Close notification">&times;</button>
                 </div>
 
@@ -366,27 +501,35 @@
                 </div>
             </div>
         </section>
-
+        
         <!-- COLORFUL MENTIONS SECTION -->
         <section id="mentions-section">
+          <div class="info-note">
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" /></svg>
+            <span>Overview metrics are derived from the top 100++ recent posts.</span>
+          </div>
             <div class="container">
                 <div id="mentionsContainer" class="mentions-grid">
                     <div class="loading-overlay" style="background: transparent;">
                         <svg class="spinner" viewBox="0 0 50 50" role="status"><circle cx="25" cy="25" r="20" fill="none" stroke="currentColor" stroke-width="4"></circle></svg>
                     </div>
-                    <div class="mentions-feed"><h2 class="section-title">Top Mentions</h2><div id="feed-items-container"></div></div>
-                    <div class="mentions-overview"><h2 class="section-title">Overview</h2><div id="overview-grid" class="overview-grid"></div></div>
-                </div>
+                    <div class="mentions-feed"><h2 class="section-title">Mentions</h2><div id="feed-items-container"></div></div>
+                    <div class="mentions-overview"><h2 class="section-title">Overview </h2><div id="overview-grid" class="overview-grid"></div></div>
+                    
+                  </div>
+                
+                
             </div>
         </section>
+        
     </div>
 
   </main>
   
   <footer id="contact">
     <div class="container" style="text-align:center; padding: 40px 0;">
-      <a class="brand" href="#"><span class="logo" aria-hidden="true"></span><span>Pulse</span></a>
-      <p style="margin-top: 8px; color: var(--muted);">&copy; <span id="year"></span> Pulse, Inc. All rights reserved.</p>
+      <a class="brand" href="#"><span class="logo" aria-hidden="true"></span><span>Seksama</span></a>
+      <p style="margin-top: 8px; color: var(--muted);">&copy; <span id="year"></span> Seksama, Inc. All rights reserved.</p>
     </div>
   </footer>
 
@@ -441,10 +584,10 @@ function renderMentions(mentionsData){
     });
 }
     const overviewMetrics=[{label:'Live Mentions (7 days)',id:'overview-total-mentions'},{label:'Positive mentions (24h)',id:'overview-positive-mentions'},{label:'Negative mentions (24 hours)',id:'overview-negative-mentions'},{label:'Estimated Reach',id:'overview-aps'},{label:'Unique Sources (Top 5)',id:'overview-social-reach'},{label:'AI Sentiment Score',id:'overview-ugc'}];
-    function renderOverview(){
-      overviewGrid.innerHTML='';
-      overviewMetrics.forEach(m=>{const h=`<div class="stat-block"><div class="stat-label">${m.label}</div><div class="stat-value" id="${m.id}">0</div><div class="stat-change" id="${m.id}-change"><svg width="14" height="14" viewBox="0 0 24 24"><path d="M12 5v14m-7-7h14"/></svg><span>0%</span></div></div>`;overviewGrid.innerHTML+=h})
-    }
+function renderOverview(){
+  overviewGrid.innerHTML='';
+  overviewMetrics.forEach(m=>{const h=`<div class="stat-block"><div class="stat-label">${m.label}</div><div class="stat-value" id="${m.id}">0</div><div class="stat-change" id="${m.id}-change"><svg width="14" height="14" viewBox="0 0 24 24"><path d="M12 5v14m-7-7h14"/></svg><span>0%</span></div></div>`;overviewGrid.innerHTML+=h})
+}
     // Ganti fungsi updateOverview yang lama dengan yang ini
 // GANTI FUNGSI LAMA DENGAN VERSI BARU INI DI public/index.html
 
@@ -476,7 +619,30 @@ function updateOverview(data){
                 </div>`;
             overviewGrid.innerHTML += blockHTML;
         });
-        //overviewGrid.innerHTML += summaryHTML;
+
+        const ctaCardHTML = `
+                <div class="cta-block">
+                    <h5>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></svg>
+                        Go Deeper
+                    </h5>
+                    <p>Track competitors and unlock historical data with our Pro plan.</p>
+                </div>
+                <div class="cta-block" style="border-left: 4px solid var(--blue);">
+                    <h5>
+                        ⚡️  Get Real-time Alerts 
+                    </h5>
+                    <p>Never miss a conversation.  Get instant notifications for new mentions on Pro.</p>
+                </div>
+                <div class="cta-block" style="border-left: 4px solid var(--green);">
+                    <h5>
+                        🧠  Emotion & Intent Analysis
+                    </h5>
+                    <p>Go beyond Positive and Negative. Understand user emotion and urgency with our advanced AI</p>
+                </div>
+            `;
+        overviewGrid.innerHTML += ctaCardHTML;
+        //overviewGrid.innerHTML += '<div class="stat-block cta-card"><div class="cta-decoration"><div class="Seksama-circle"></div><div class="gradient-orb"></div></div><div class="cta-content"><div class="cta-header"><span class="cta-icon">🚀</span><h3 class="cta-title">Go Beyond The Numbers</h3></div><p class="cta-description">Upgrade to Pro to track competitors<br>and get real-time alerts.</p><button class="cta-button"><span class="button-text">Upgrade to Pro</span><svg class="button-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button></div><div class="accent-line"></div></div>';
     }
     
     // 3. Panggil animasi setelah semua elemen HTML dibuat
