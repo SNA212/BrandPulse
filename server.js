@@ -37,7 +37,7 @@ const limiter = rateLimit({
 // ===============================================================
 // --- SOLUSI: Tambahkan Mekanisme Cache Sederhana ---
 const requestCache = new Map();
-const CACHE_DURATION_MS = 300 * 1000; // Cache berlaku selama 30 detik
+const CACHE_DURATION_MS = 600 * 1000; // Cache berlaku selama 30 detik
 // ===============================================================
 
 // 3. Middleware
@@ -61,48 +61,88 @@ app.use(session({
 app.get('/api/analyze', async (req, res) => {
     const { keyword } = req.query;
     if (!keyword) return res.status(400).json({ error: 'Keyword is required' });
-
     const normalizedKeyword = keyword.toLowerCase().trim();
 
-    // --- PERIKSA CACHE ---
+    console.log(`[Request] Analyzing keyword: "${normalizedKeyword}"`);
+
+     // --- PERIKSA CACHE ---
     const cachedEntry = requestCache.get(normalizedKeyword);
     if (cachedEntry && Date.now() - cachedEntry.timestamp < CACHE_DURATION_MS) {
         console.log(`[Cache] HIT: Serving cached data for "${normalizedKeyword}".`);
         // Kirim data dari cache dan jangan lakukan analisis baru
         return res.json(cachedEntry.data);
     }
+
     console.log(`[Cache] MISS: No valid cache for "${normalizedKeyword}". Performing new analysis.`);
-    // -------------------
 
     try {
-        const [socialResults, newsResults] = await Promise.all([searchSocialMedia(normalizedKeyword), searchNews(normalizedKeyword)]);
-        
-        console.log(`[Backend] Social Media search found ~${socialResults.total_results.toLocaleString()} results.`);
-        console.log(`[Backend] News search found ~${newsResults.total_results.toLocaleString()} results.`);
-        
-        const allResults = [...socialResults.results, ...newsResults.results];
-        const totalResultCount = socialResults.total_results + newsResults.total_results;
-        allResults.sort(() => Math.random() - 0.5);
-        //allResults =  shuffleArray(allResults);
+        // --- LANGKAH 1: Cek riwayat di Supabase ---
+        const { data: history, error: historyError } = await supabase
+            .from('analysis_history')
+            .select('analysis_data, mention_count, created_at')
+            .eq('keyword', normalizedKeyword)
+            .order('created_at', { ascending: false });
 
-        const data = await processDataWithAI(normalizedKeyword, allResults, totalResultCount);
-        
-        // --- SIMPAN HASIL KE CACHE ---
-        requestCache.set(normalizedKeyword, {
-            data: data,
-            timestamp: Date.now()
-        });
-        // Bersihkan cache lama secara berkala untuk mencegah memory leak
-        clearOldCache();
-        // -------------------------
+        if (historyError) {
+            throw new Error(`Supabase history check failed: ${historyError.message}`);
+        }
 
-        res.json(data);
+        // Cek apakah ada data dan data terbaru dibuat pada hari yang sama
+        const todayStart = new Date().setHours(0, 0, 0, 0);
+        const latestEntry = history?.[0];
+        const isDataFromToday = latestEntry && new Date(latestEntry.created_at).setHours(0, 0, 0, 0) === todayStart;
+
+        if (isDataFromToday) {
+            // KASUS A: Data hari ini sudah ada. Gunakan data dari Supabase.
+            console.log(`[Supabase HIT] Found data for "${normalizedKeyword}" from today. Serving from DB.`);
+            
+            // Gabungkan semua 'mentions' dari riwayat
+            let allMentions = [];
+            history.forEach(entry => {
+                if (entry.analysis_data ) {
+                    allMentions.push(...entry.analysis_data);
+                }
+            });
+            // Hapus duplikat berdasarkan link
+            allMentions = Array.from(new Map(allMentions.map(item => [item.link, item])).values());
+            allMentions.sort(() => Math.random() - 0.5); // Acak lagi
+
+            // Ambil data analitik dari entri TERBARU
+            const latestData = latestEntry.analysis_data;
+            const totalResultCount = history.reduce((count, entry) => {
+                return count + (entry.mention_count ? entry.mention_count : 0);
+            }, 0);
+            //latestData.mentions = allMentions.slice(0, 5); // Tampilkan 5 mention gabungan teratas
+            const freshData = await processDataWithAI(normalizedKeyword, latestData, totalResultCount, history || []);
+            return res.json(freshData);
+        } else {
+            // KASUS B: Tidak ada data hari ini. Lakukan request baru.
+            console.log(`[Supabase MISS] No data for today. Performing new analysis for "${normalizedKeyword}".`);
+            
+            const [socialResults, newsResults] = await Promise.all([searchSocialMedia(normalizedKeyword), searchNews(normalizedKeyword)]);
+            
+            const allResults = [...socialResults.results, ...newsResults.results];
+            const totalResultCount = socialResults.total_results + newsResults.total_results;
+            allResults.sort(() => Math.random() - 0.5);
+
+            // Proses data baru
+            const freshData = await processDataWithAI(normalizedKeyword, allResults, totalResultCount, history || []);
+            
+            // Simpan hasil BARU ke database
+            requestCache.set(normalizedKeyword, {
+                data: freshData,
+                timestamp: Date.now()
+            });
+            // Bersihkan cache lama secara berkala untuk mencegah memory leak
+            clearOldCache();
+            return res.json(freshData);
+        }
 
     } catch (error) {
-        console.error('[Backend] Error:', error);
+        console.error('[Backend] Error:', error.message);
         res.status(500).json({ error: 'Failed to complete analysis. ' + error.message });
     }
-},limiter);
+});
 
 
 
@@ -122,8 +162,6 @@ function clearOldCache() {
     }
 }
 
-// ... (Sisa dari kode server.js Anda tetap sama persis)
-// ... (Fungsi searchSocialMedia, searchNews, makeSerpApiRequest, getSentimentFromAI, getAiRecommendations, processDataWithAI, getSourceIcon, randomColor)
 async function searchSocialMedia(query) {
     const sitesQuery = SOCIAL_MEDIA_DOMAINS.map(domain => `site:${domain}`).join(' OR ');
     const finalQuery = `"${query}" (${sitesQuery})`;
@@ -207,22 +245,16 @@ async function processDataWithAI(keyword, searchResults, totalResultCount) {
     const topSources = new Map();
     const resultsToAnalyze = searchResults.slice(0, 5);
 
+    
     const mentions = await Promise.all(resultsToAnalyze.map(async (result) => {
         const snippet = result.snippet || `Title: ${result.title}`;
         const sentiment = await getSentimentFromAI(snippet);
-        sentimentCounts[sentiment]++;
         let domain = 'unknown.com';
+        sentimentCounts[sentiment]++;
         try { domain = new URL(result.link).hostname.replace('www.', ''); topSources.set(domain, (topSources.get(domain) || 0) + 1); } catch (e) {}
         return { icon: getSourceIcon(domain), title: result.title, link: result.link, displayLink: result.displayed_link || domain, snippet: snippet.replace(new RegExp(keyword, 'gi'), `<mark>${keyword}</mark>`), sentiment: sentiment };
     }));
 
-    await Promise.all(searchResults.map(async (result) => {
-        const snippet = result.snippet || `Title: ${result.title}`;
-        const sentiment = await getSentimentFromAI(snippet);
-        sentimentCounts[sentiment]++;
-    }));
-
-    
     const liveMentions = totalResultCount;
     
     // --- INTEGRASI SUPABASE DENGAN VALIDASI TANGGAL ---
@@ -256,6 +288,15 @@ async function processDataWithAI(keyword, searchResults, totalResultCount) {
     // 3. Simpan data baru HANYA jika diperlukan
     if (shouldInsert) {
         console.log(`[Supabase] Saving new entry for "${keyword}" with ${liveMentions} mentions.`);
+        await Promise.all(searchResults.map(async (result) => {
+            const snippet = result.snippet || `Title: ${result.title}`;
+            if(!mentions.includes(snippet)) {
+                const sentiment = await getSentimentFromAI(snippet);
+                sentimentCounts[sentiment]++;
+            }
+            
+        }));
+        
         const { error: insertError } = await supabase
             .from('analysis_history')
             .insert({ keyword: keyword.toLowerCase(), mention_count: liveMentions,negative_count: sentimentCounts.Negative,positive_count: sentimentCounts.Positive,neutral_count: sentimentCounts.Neutral,analysis_data:searchResults });
@@ -316,12 +357,12 @@ async function processDataWithAI(keyword, searchResults, totalResultCount) {
     trendData.forEach((val, i) => { normalizedTrend[startIndex + i] = val; });
     const maxMentions = Math.max(...normalizedTrend, 1);
     const scaledTrend = normalizedTrend.map(val => Math.min(95, Math.max(5, (val / maxMentions) * 90)));
- 
-
+    const post = history.reduce((total, row) => total + row.positive_count, 0);
+    const neg  = history.reduce((total, row) => total + row.negative_count, 0);
     let sentimentPercentages = { pos: 0, neu: 0, neg: 0 };
     if (mentions && mentions.length > 0) {
-        sentimentPercentages.pos = Math.floor(((sentimentCounts.Positive + history[0].positive_count)/searchResults.length) * 100);       
-        sentimentPercentages.neg = Math.floor(((sentimentCounts.Negative + history[0].negative_count)/searchResults.length) * 100);
+        sentimentPercentages.pos = Math.floor(((post+sentimentCounts.Positive)/searchResults.length) * 100);       
+        sentimentPercentages.neg = Math.floor(((neg+sentimentCounts.Negative)/searchResults.length) * 100);
         sentimentPercentages.neu = 100 -  sentimentPercentages.pos - sentimentPercentages.neg ;
     }
 
@@ -333,10 +374,9 @@ async function processDataWithAI(keyword, searchResults, totalResultCount) {
     const overview = {
         stats: [
             { label: 'Live Mentions (7 days)', value: liveMentions, change: previousMentionsChange },
-            { label: 'Positive mention (24 hours)', value: (sentimentCounts.Positive + history[0].positive_count), change: previousPositiveChange},
-            { label: 'Negative mentions (24 hours)', value: (sentimentCounts.Negative + history[0].negative_count), change: previousnegativeeChange },
+            { label: 'Positive mention (24 hours)', value: (post+sentimentCounts.Positive), change: previousPositiveChange},
+            { label: 'Negative mentions (24 hours)', value: (neg+sentimentCounts.Negative), change: previousnegativeeChange },
             { label: 'Estimated Reach', value: liveMentions * (Math.floor(Math.random() * (200 - 50 + 1)) + 50), change: Math.floor(Math.random() * (200 - 20 + 1)) + 20},
-            { label: 'Unique Sources (Top 5)', value: topSources.size, change: Math.floor(Math.random() * (15 - -5 + 1)) + -5},
             { label: 'AI Sentiment Score', value: Math.max(0, sentimentPercentages.pos - sentimentPercentages.neg), change: Math.floor(Math.random() * (15 - -15 + 1)) + -15, suffix: '/100' },
         ],
         ai_recommendations: aiRecommendations
