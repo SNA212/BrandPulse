@@ -151,8 +151,35 @@
     .bar{height:8px;border-radius:999px;background:#e6edf6;overflow:hidden;margin-top:10px;display:grid;grid-template-columns:var(--pos) var(--neu) var(--neg)}
     .bar span{display:block;height:100%}
     .pos{background:var(--green)}.neu{background:#9aa7b6}.neg{background:var(--red)}
-    .tags{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
-    .tag{padding:6px 10px;border:1px solid var(--border);border-radius:999px;background:var(--bg);color:var(--muted);font-size:12px}
+    .tags{display:flex;gap:8px;flex-direction:column;margin-top:10px}
+    .tag {
+        display: inline-flex; /* Gunakan inline-flex agar bisa di-align */
+        align-items: center;
+        gap: 8px;
+        padding: 6px 10px;
+        background-color: var(--bg); /* Latar belakang yang sedikit berbeda */
+        border: 1px solid var(--border);
+        border-radius: 8px; /* Sedikit lebih kotak */
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--muted);
+        text-decoration: none;
+        transition: background-color 0.2s ease, color 0.2s ease;
+    }
+    .tag {
+        display: inline-flex; /* Gunakan inline-flex agar bisa di-align */
+        align-items: center;
+        gap: 8px;
+        padding: 6px 10px;
+        background-color: var(--bg); /* Latar belakang yang sedikit berbeda */
+        border: 1px solid var(--border);
+        border-radius: 8px; /* Sedikit lebih kotak */
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--muted);
+        text-decoration: none;
+        transition: background-color 0.2s ease, color 0.2s ease;
+    }
     .chart{height:180px;border:1px dashed var(--border);border-radius:12px;background:var(--bg);padding:8px;display:flex;align-items:center;justify-content:center}
     .chart svg{width:100%;height:100%}
     .chart .area{fill:url(#grad);opacity:0;transition:opacity .6s ease}
@@ -495,7 +522,10 @@
                         <svg class="spinner" viewBox="0 0 50 50" role="status"><circle cx="25" cy="25" r="20" fill="none" stroke="currentColor" stroke-width="4"></circle></svg>
                     </div>
                     <div class="row">
-                        <div class="panel"><div class="kpis"><div class="kpi"><div class="label">Live mentions (24h)</div><div class="value" id="mentionsValue">—</div></div><div class="kpi"><div class="label">Sentiment</div><div class="bar" id="sentBar"><span class="pos"></span><span class="neu"></span><span class="neg"></span></div><div id="sentimentText" class="muted">—</div></div><div class="kpi"><div class="label">Top sources</div><div class="tags" id="sourceTags"><span class="tag">—</span></div></div></div></div>
+                        <div class="panel"><div class="kpis"><div class="kpi"><div class="label">Live mentions (24h)</div><div class="value" id="mentionsValue">—</div></div><div class="kpi"><div class="label">Sentiment</div><div class="bar" id="sentBar"><span class="pos"></span><span class="neu"></span><span class="neg"></span></div><div id="sentimentText" class="muted">—</div></div><div class="kpi"><div class="label label-with-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.72"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.72-1.72"></path></svg>
+                            <span>Top Sources</span>
+                        </div><div id="sourceTags"><span class="tag">—</span></div></div></div></div>
                         <div class="panel chart"><svg viewBox="0 0 100 100" preserveAspectRatio="none"><defs><linearGradient id="grad" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="rgba(43,142,255,.35)"></stop><stop offset="100%" stop-color="rgba(43,142,255,0)"></stop></linearGradient></defs><g class="axis"><line x1="0" y1="95" x2="100" y2="95"></line><line x1="0" y1="5" x2="0" y2="95"></line></g><path id="areaPath" class="area" d=""></path><path id="linePath" class="line" d=""></path></svg></div>
                     </div>
                 </div>
@@ -662,8 +692,40 @@ function renderTopAnalytics(analyticsData){
     document.getElementById('sentBar').style.cssText = `--pos:${s.pos}%;--neu:${s.neu}%;--neg:${s.neg}%`;
     document.getElementById('sentimentText').textContent = `👍 ${s.pos}% • 😐 ${s.neu}% • 👎 ${s.neg}%`;
     const tags=document.getElementById('sourceTags'); tags.innerHTML='';
-    analyticsData.topSources.forEach(n=>{const s=document.createElement('span');s.className='tag';s.textContent=n;tags.appendChild(s)});
     
+    //analyticsData.topSources.forEach(n=>{const s=document.createElement('span');s.className='tag';s.textContent=n;tags.appendChild(s)});
+    if (analyticsData.topSources && analyticsData.topSources.length > 0) {
+        analyticsData.topSources.forEach(domain => {
+            // Buat elemen anchor (<a>) agar bisa diklik
+            const link = document.createElement('a');
+            link.href = `http://${domain}`; // Buat tautan ke domain
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer';
+            link.className = 'tag';
+
+            // Buat elemen gambar (<img>) untuk favicon
+            const favicon = document.createElement('img');
+            favicon.src = `https://www.google.com/s2/favicons?domain=${domain}&sz=16`; // Gunakan Google Favicon API
+            favicon.alt = `${domain} favicon`;
+            favicon.className = 'favicon';
+            // Tambahkan error handler jika favicon tidak ditemukan
+            favicon.onerror = () => { favicon.src = 'https://via.placeholder.com/16/E2E8F0/94A3B8?text=X'; };
+
+            // Buat elemen span untuk teks nama domain
+            const text = document.createElement('span');
+            text.textContent = domain;
+
+            // Gabungkan elemen-elemen
+            link.appendChild(favicon);
+
+            // Tambahkan ke kontainer
+            tags.appendChild(link);
+        });
+    } else {
+        // Tampilkan placeholder jika tidak ada sumber
+        tags.innerHTML = '<span class="tag">No sources found</span>';
+    }
+
     const series = analyticsData.trend.map((v, i) => ({ x: i / (analyticsData.trend.length - 1) * 100, y: 100 - v }));
     const area=document.getElementById('areaPath'),line=document.getElementById('linePath'),dTop=`M ${series[0].x},${series[0].y} `+series.map(p=>`L ${p.x},${p.y}`).join(' ');
     area.setAttribute('d',dTop+' L 100,95 L 0,95 Z');line.setAttribute('d',dTop);
